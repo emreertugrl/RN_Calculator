@@ -1,97 +1,91 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+🔁 1. React.memo Nedir?
+📌 Tanım:
+React.memo, bir Higher-Order Component'tir. Yani bir bileşeni saran özel bir fonksiyondur.
 
-# Getting Started
+🧠 Amaç:
+Eğer bir bileşen aynı props ile tekrar tekrar çağrılıyorsa, yeniden render edilmesin diye kullanılır.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+🔧 Kullanımı:
+const MyComponent = ({title}) => {
+console.log('Render edildi');
+return <Text>{title}</Text>;
+};
 
-## Step 1: Start Metro
+export default React.memo(MyComponent);
+🔍 Nasıl Çalışır?
+Eğer props'larda hiçbir değişiklik yoksa, React.memo bileşeni önceki render'ı kullanır (memoize eder).
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+Ama props'lardan biri bile farklıysa (referans ya da değer farkı) bileşen yeniden render edilir.
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+💡 2. Neden React.memo Bazen İşe Yaramaz?
+<CustomButton handle={() => setA(a + 1)} />
+Burada handle prop'u her seferinde yeni bir fonksiyondur. React bunu şöyle görür:
 
-```sh
-# Using npm
-npm start
+js
+Kopyala
+Düzenle
+prevProps.handle !== nextProps.handle // true → yeniden render
+İşte burada useCallback devreye girer.
 
-# OR using Yarn
-yarn start
-```
+📌 3. useCallback Nedir?
+📌 Tanım:
+useCallback, bir fonksiyonu sabit tutmak (memoize etmek) için kullanılır. Fonksiyon her render’da yeniden oluşturulmaz, referansı sabit kalır.
 
-## Step 2: Build and run your app
+🔧 Kullanımı:
+const handleClick = useCallback(() => {
+setA(prev => prev + 1);
+}, []);
+🧠 Neden Önemli?
+React.memo bileşene props geçerken eğer fonksiyon gönderiyorsan, bu fonksiyonun referansı değişmemeli. useCallback, bunu sağlar.
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+🧮 4. useMemo Nedir?
+📌 Tanım:
+useMemo, bir değeri hesaplayıp bellekte saklar. İlgili bağımlılıklar değişmediği sürece bu değeri tekrar hesaplamaz.
 
-### Android
+🔧 Kullanımı:
+const expensiveResult = useMemo(() => {
+return slowFunction(input);
+}, [input]);
+Ne İçin Kullanılır?
+Ağır hesaplamaları sadece gerekli olduğunda tekrar yapmak için
 
-```sh
-# Using npm
-npm run android
+Derin object, array referanslarını sabit tutmak için
 
-# OR using Yarn
-yarn android
-```
+🔄 5. Neden Bazı Bileşenler Gereksiz Render Olur?
+React bileşenleri her state veya prop değişiminde kendisi ve altındaki tüm bileşenleri yeniden render eder. Bu, bazen gereksizdir.
 
-### iOS
+Örnek:
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+<Count count={a} title="A" />
+<Count count={b} title="B" />
+Sen sadece setA yaptığında, b'nin bileşeninde değişiklik yok. Ama parent (Memorization) yeniden render olduğu için, içindeki Count bileşenleri de yeniden çağrılır. Eğer Count bileşeni memo ile sarılıysa ve count & title aynıysa, render olmaz.
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+👨‍🏫 Özet Tablo
+Kavram Ne Yapar? Ne Zaman Kullanılır?
+React.memo Bileşeni memoize eder Props değişmiyorsa yeniden render olmasın diye
+useCallback Fonksiyonları memoize eder Props olarak fonksiyon gönderiyorsan
+useMemo Değerleri hesaplayıp saklar Ağır hesaplamaları optimize etmek için
+Yeniden Render React tüm parent ve children'ı render eder memo, useCallback ile optimize edilir
 
-```sh
-bundle install
-```
+🎁 Bonus: Pratik Örnek
+const MyComponent = () => {
+const [a, setA] = useState(0);
+const [b, setB] = useState(0);
 
-Then, and every time you update your native dependencies, run:
+const handleA = useCallback(() => setA(prev => prev + 1), []);
+const handleB = useCallback(() => setB(prev => prev + 1), []);
 
-```sh
-bundle exec pod install
-```
+return (
+<>
+<Count title="A" count={a} />
+<Count title="B" count={b} />
+<CustomButton title="A Arttır" handle={handleA} backgroundColor="green" />
+<CustomButton title="B Arttır" handle={handleB} backgroundColor="red" />
+</>
+);
+};
+Böylece:
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+CustomButton her render’da tekrar render edilmez.
 
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
-
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+Count bileşenleri yalnızca ilgili sayı değişince render olur.
